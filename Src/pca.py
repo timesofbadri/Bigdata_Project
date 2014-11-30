@@ -3,6 +3,7 @@
 
 import sys, getopt
 import numpy
+import PyML as pyml
 import matplotlib.pyplot as plt
 import matplotlib.cm as cm
 
@@ -45,7 +46,7 @@ def main(argv):
 	grayMatrix -= grayMatrix.mean(axis=1)[:, None]
 
 	#Apply PCA
-	computePCA(grayMatrix, featureSize)
+	computePCA(grayMatrix, featureSize, labels)
     
 	#Compute covariance matrix
 	#M = numpy.dot(grayMatrix,grayMatrix.T)
@@ -66,7 +67,7 @@ def getArguments(argv):
 		sys.exit()
 	return str(sys.argv[1])
 
-def computePCA(matrix, featureSize):
+def computePCA(matrix, featureSize,labels):
 	#Compute cov matrix
 	cov_mat = numpy.cov(matrix.T)
 	print cov_mat.shape
@@ -84,6 +85,9 @@ def computePCA(matrix, featureSize):
 
 	transformed = matrix.dot(matrix_w)
 	print transformed.shape
+
+	data = VectorDataSet(transformed, L = labels)
+	print data
 
 	recData = transformed.dot(matrix_w.T) + matrix.mean(axis=1)[:, None]
 
