@@ -3,9 +3,12 @@
 
 import sys, getopt
 import numpy
-import PyML as pyml
 import matplotlib.pyplot as plt
 import matplotlib.cm as cm
+from matplotlib.mlab import PCA as mlabPCA
+from sklearn import datasets
+from sklearn.multiclass import OneVsRestClassifier
+from sklearn.svm import LinearSVC
 
 def unpickle(file):
     import cPickle
@@ -23,7 +26,6 @@ def main(argv):
 	dict = unpickle('data_batch_1')
 	dt = unpickle('batches.meta')
 	print dt
-	print dict['labels'][0]
 	#Initialize matrix
 	size = len(dict['data'])
 	featureSize = len(dict['data'][0])/3
@@ -34,6 +36,7 @@ def main(argv):
 	items = list(dict.items())
 	dataItem = items[0]
 	labels = numpy.array(dict['labels'])
+	print labels
 	dataMatrix = numpy.array(dataItem[1])
 	R = dataMatrix[:,:1024]
 	G = dataMatrix[:,1024:2048]
@@ -46,7 +49,7 @@ def main(argv):
 	grayMatrix -= grayMatrix.mean(axis=1)[:, None]
 
 	#Apply PCA
-	computePCA(grayMatrix, featureSize, labels)
+	train(grayMatrix, featureSize, labels)
     
 	#Compute covariance matrix
 	#M = numpy.dot(grayMatrix,grayMatrix.T)
@@ -67,7 +70,7 @@ def getArguments(argv):
 		sys.exit()
 	return str(sys.argv[1])
 
-def computePCA(matrix, featureSize,labels):
+def train(matrix, featureSize, labels):
 	#Compute cov matrix
 	cov_mat = numpy.cov(matrix.T)
 	print cov_mat.shape
@@ -79,19 +82,24 @@ def computePCA(matrix, featureSize,labels):
 	eig_pairs.reverse()
 
 	matrix_w = eig_pairs[0][1].reshape(featureSize,1)
-	for i in range(200):
+	for i in range(100):
 		matrix_w = numpy.hstack((matrix_w, eig_pairs[i+1][1].reshape(featureSize,1)))
 	print matrix_w.shape
 
 	transformed = matrix.dot(matrix_w)
 	print transformed.shape
 
-	data = VectorDataSet(transformed, L = labels)
-	print data
+	#Start to train SVM
+	Z = OneVsRestClassifier(LinearSVC()).fit(transformed, labels).predict(transformed)
+	print Z
+	correct = 0.0
+	for x in range(len(Z)):
+		if labels[x] == Z[x]:
+			correct = correct +1
 
-	recData = transformed.dot(matrix_w.T) + matrix.mean(axis=1)[:, None]
-
-	plot(recData[0].reshape((32,32)))
+	print correct/len(Z)
+	#recData = transformed.dot(matrix_w.T) + matrix.mean(axis=1)[:, None]
+	#plot(recData[0].reshape((32,32)))
 			
 #Main entry
 if __name__ == "__main__":
