@@ -9,6 +9,8 @@ from matplotlib.mlab import PCA as mlabPCA
 from sklearn import datasets
 from sklearn.multiclass import OneVsRestClassifier
 from sklearn.svm import LinearSVC
+from sklearn.svm import SVC
+
 
 def unpickle(file):
     import cPickle
@@ -90,13 +92,13 @@ def train(matrix, featureSize, labels):
 	print transformed.shape
 
 	#Start to train SVM
-	Z = OneVsRestClassifier(LinearSVC()).fit(transformed, labels).predict(transformed)
+	# Z = OneVsRestClassifier(LinearSVC()).fit(transformed, labels).predict(transformed)
+	Z = OneVsRestClassifier(SVC(kernel = "rbf")).fit(transformed, labels).predict(transformed)
 	print Z
 	correct = 0.0
 	for x in range(len(Z)):
 		if labels[x] == Z[x]:
 			correct = correct +1
-
 	print correct/len(Z)
 	#recData = transformed.dot(matrix_w.T) + matrix.mean(axis=1)[:, None]
 	#plot(recData[0].reshape((32,32)))
