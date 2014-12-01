@@ -25,21 +25,19 @@ def main(argv):
     #inputfile = getArguments(argv)
     #Uncomment following line to enable argument
     #dict = unpickle(inputfile)
+    
     global num_batch
         num_batch = 2
         dict = {};
         for x in range(num_batch):
             if len(dict) == 0:
                 dict = unpickle('data_batch_' + str(x+1))
-                    print len(dict['labels'])
                 else:
                     tmp_dict = unpickle('data_batch_' + str(x+1))
                         dict['data'] = numpy.vstack([dict['data'], tmp_dict['data']])
                         dict['labels'].extend(tmp_dict['labels'])
-                        print len(dict['labels'])
-                print len(dict['data'])
-    
-    dt = unpickle('batches.meta')
+        
+        dt = unpickle('batches.meta')
         print dt
         #Initialize matrix
         size = len(dict['data'])
@@ -51,8 +49,6 @@ def main(argv):
         items = list(dict.items())
         dataItem = items[0]
         labels = numpy.array(dict['labels'])
-        print labels.shape
-        print len(labels)
         dataMatrix = numpy.array(dataItem[1])
         R = dataMatrix[:,:1024]
         G = dataMatrix[:,1024:2048]
@@ -65,7 +61,7 @@ def main(argv):
         grayMatrix -= grayMatrix.mean(axis=1)[:, None]
         
         #Apply PCA
-        train(grayMatrix, featureSize, labels)
+            train(grayMatrix, featureSize, labels)
 
 #Compute covariance matrix
 #M = numpy.dot(grayMatrix,grayMatrix.T)
@@ -88,23 +84,15 @@ def getArguments(argv):
         return str(sys.argv[1])
 
 def train(matrix, featureSize, labels):
-    #Compute cov matrix
+    #divide into train data and test data
     num_split = (num_batch - 1) * 10000
-        print num_split
         matrix_test = matrix[num_split: (num_split + 10000),:]
         labels_test = labels[num_split: (num_split + 10000)]
         matrix = matrix[:num_split,:]
         labels = labels[:num_split]
-        print labels
-        print labels_test
-        print len(matrix_test)
-        print len(labels_test)
-        print len(matrix)
-        print len(labels)
-        print matrix
-        print matrix_test
+        
+        #Compute cov matrix
         cov_mat = numpy.cov(matrix.T)
-        print cov_mat.shape
         eig_val_cov, eig_vec_cov = numpy.linalg.eig(cov_mat)# Make a list of (eigenvalue, eigenvector) tuples
         eig_pairs = [(numpy.abs(eig_val_cov[i]), eig_vec_cov[:,i]) for i in range(len(eig_val_cov))]
         
@@ -115,34 +103,38 @@ def train(matrix, featureSize, labels):
         matrix_w = eig_pairs[0][1].reshape(featureSize,1)
         for i in range(10):
             matrix_w = numpy.hstack((matrix_w, eig_pairs[i+1][1].reshape(featureSize,1)))
-        print matrix_w.shape
-        print matrix.dot(matrix_w)
-        print matrix_test.dot(matrix_w)
+        # print matrix_w.shape
+        # print matrix.dot(matrix_w)
+        # print matrix_test.dot(matrix_w)
+        
+        # calculate projection
         transformed = matrix.dot(matrix_w)
-        print transformed.shape
         tf = transformed.T
-        color = [str((item+1) * 24./255.) for item in labels]
-        pl.scatter(tf[0],tf[1],c = color )
-        # pl.show()
         
-        
-        # h = 10
-        # x_min, x_max = transformed[:, 0].min() - 1, transformed[:, 0].max() + 1
-        # y_min, y_max = transformed[:, 1].min() - 1, transformed[:, 1].max() + 1
-        # xx, yy = numpy.meshgrid(numpy.arange(x_min, x_max, h), numpy.arange(y_min, y_max, h))
-        
+        #recData = transformed.dot(matrix_w.T) + matrix.mean(axis=1)[:, None]
+        #plot(recData[0].reshape((32,32)))
         
         #Start to train SVM
         #gamma = 1/sigma^2
         OVRC = OneVsRestClassifier(SVC(kernel = "rbf", gamma = 0.000001)).fit(transformed, labels)
         
+        # Print Scatter plot
+        # color = [str((item+1) * 24./255.) for item in labels]
+        # pl.scatter(tf[0],tf[1],c = color )
+        # pl.show()
+        
+        # Print the shape of classifier
+        # h = 10
+        # x_min, x_max = transformed[:, 0].min() - 1, transformed[:, 0].max() + 1
+        # y_min, y_max = transformed[:, 1].min() - 1, transformed[:, 1].max() + 1
+        # xx, yy = numpy.meshgrid(numpy.arange(x_min, x_max, h), numpy.arange(y_min, y_max, h))
         # YY = OVRC.predict(numpy.c_[xx.ravel(), yy.ravel()])
         # print YY
         # YY = YY.reshape(xx.shape)
         # pl.contourf(xx, yy, YY, cmap=plt.cm.Paired, alpha=0.8)
         # pl.show()
         
-        #self accuracy
+        #Output training accuracy
         Y = OVRC.predict(matrix.dot(matrix_w))
         print Y
         correct = 0.0
@@ -151,7 +143,7 @@ def train(matrix, featureSize, labels):
                 correct = correct +1
         print correct/len(Y)
         
-        #test accuracy
+        #Output test accuracy
         Z = OVRC.predict(matrix_test.dot(matrix_w))
         print Z
         correct = 0.0
@@ -159,8 +151,7 @@ def train(matrix, featureSize, labels):
             if labels_test[x] == Z[x]:
                 correct = correct +1
         print correct/len(Z)
-#recData = transformed.dot(matrix_w.T) + matrix.mean(axis=1)[:, None]
-#plot(recData[0].reshape((32,32)))
+
 
 #Main entry
 if __name__ == "__main__":
