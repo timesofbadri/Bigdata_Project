@@ -16,7 +16,7 @@ import matplotlib.cm as cm
 from matplotlib.mlab import PCA as mlabPCA
 from sklearn import datasets
 from sklearn.multiclass import OneVsRestClassifier
-from sklearn.svm import LinearSVC
+from sklearn.svm import SVC
 from PIL import Image
 import pickle
 
@@ -31,9 +31,22 @@ def show(request):
 
             i = Image.open(newdoc.docfile)
             i = i.convert('RGB')
+            pix=i.load()
+            w=i.size[0]
+            h=i.size[1]
+            RT = numpy.zeros(w*h)
+            BT = numpy.zeros(w*h)
+            GT = numpy.zeros(w*h)
+            for i in range(h):
+                for j in range(w):
+                    r,g,b = pix[j,i]
+                    RT[i*32 + j] = r
+                    GT[i*32 + j] = g
+                    BT[i*32 + j] = b
 
-            a = numpy.asarray(i)
-            print a.shape
+            grayMatrixT = (RT*0.2989+GT*0.5870+BT*0.1140)
+            #Normalize
+            grayMatrixT -= grayMatrixT.mean()
 
             dict = unpickle('data_batch_1')
             dt = unpickle('batches.meta')
@@ -60,7 +73,7 @@ def show(request):
             grayMatrix -= grayMatrix.mean(axis=1)[:, None]
 
             #Apply PCA
-            train(grayMatrix, featureSize, labels)
+            train(grayMatrix, featureSize, labels, grayMatrixT)
 
             # Redirect to the document list after POST
             return HttpResponseRedirect(reverse('myproject.myapp.views.show'))
@@ -88,39 +101,36 @@ def getArguments(argv):
         sys.exit()
     return str(sys.argv[1])
 
-def train(matrix, featureSize, labels):
+def train(matrix, featureSize, labels, predictor):
+
+    cov_mat = numpy.cov(matrix.T)
+    print cov_mat.shape
+    eig_val_cov, eig_vec_cov = numpy.linalg.eig(cov_mat)# Make a list of (eigenvalue, eigenvector) tuples
+    eig_pairs = [(numpy.abs(eig_val_cov[i]), eig_vec_cov[:,i]) for i in range(len(eig_val_cov))]
+
+    # Sort the (eigenvalue, eigenvector) tuples from high to low
+    eig_pairs.sort()
+    eig_pairs.reverse()
+
+    matrix_w = eig_pairs[0][1].reshape(featureSize,1)
+    for i in range(200):
+        matrix_w = numpy.hstack((matrix_w, eig_pairs[i+1][1].reshape(featureSize,1)))
+    print matrix_w.shape
+
+    transformed = matrix.dot(matrix_w)
+    print transformed.shape
     #Compute cov matrix
     if os.path.isfile('svm.model'):
         print 'Loading Model file...'
         #Load models from file
         with open('svm.model', 'rb') as file:
             Z = pickle.load(file)
-        with open('trans.model', 'rb') as file:
-            transformed = pickle.load(file)
     else:
-        cov_mat = numpy.cov(matrix.T)
-        print cov_mat.shape
-        eig_val_cov, eig_vec_cov = numpy.linalg.eig(cov_mat)# Make a list of (eigenvalue, eigenvector) tuples
-        eig_pairs = [(numpy.abs(eig_val_cov[i]), eig_vec_cov[:,i]) for i in range(len(eig_val_cov))]
-
-        # Sort the (eigenvalue, eigenvector) tuples from high to low
-        eig_pairs.sort()
-        eig_pairs.reverse()
-
-        matrix_w = eig_pairs[0][1].reshape(featureSize,1)
-        for i in range(200):
-            matrix_w = numpy.hstack((matrix_w, eig_pairs[i+1][1].reshape(featureSize,1)))
-        print matrix_w.shape
-
-        transformed = matrix.dot(matrix_w)
-        print transformed.shape
-
         #Start to train SVM
-        Z = OneVsRestClassifier(LinearSVC()).fit(transformed, labels)
+        Z = OneVsRestClassifier(SVC(kernel="rbf")).fit(transformed, labels)
         with open('svm.model', 'wb') as file:
             pickle.dump(Z, file)
-        with open('trans.model', 'wb') as file:
-            pickle.dump(transformed, file)
+
 
     recData = transformed.dot(matrix_w.T) + matrix.mean(axis=1)[:, None]
     j = Image.fromarray(recData[0].reshape((32,32)))
@@ -129,9 +139,9 @@ def train(matrix, featureSize, labels):
     j.save("myproject/media/documents/pca.png");
     newdoc.save();
 
-    print Z
-
-    Z =  Z.predict(transformed)
+    Z =  Z.predict(predictor.dot(matrix_w))
+    res = Z[0]
+    print res
     correct = 0.0
     for x in range(len(Z)):
         if labels[x] == Z[x]:
