@@ -7,6 +7,7 @@
 \usepackage{amssymb}
 \usepackage{hyperref}
 \usepackage[colorinlistoftodos]{todonotes}
+\usepackage{url}
 \newcommand{\vwi}{{\bf w}_i}
 \newcommand{\vw}{{\bf w}}
 \newcommand{\vx}{{\bf x}}
@@ -54,7 +55,7 @@ Image recognition requires high workload because of its intrinsic complex featur
 \end{abstract}
 
 \section{Background and Motivation}
-Pattern recognition concerning image has the mark of complex feature space. Consider a $32\times 32$ color picture, each picture will have 3072 features take RGB scheme into account. For a dataset of 60,000 pictures, it is quite a huge load for the classification task.\\
+Pattern recognition concerning image has the mark of complex feature space. Consider a $32\times 32$ color picture, each picture will have 3072 features taking RGB scheme into account. For a dataset of 60,000 pictures, it is quite a huge workload for the classification task.\\
 \\
 However the ability to deal with classification in image recognition is of quite significance. For instance, when we  look for images by inputting keyword "car" through a search engine, clearly it should distinguish between distinct types of objects and we don't expect a picture of a boat in the search result.\\
 \\
@@ -87,7 +88,10 @@ which reveals that the variance will be a maximum when we set $\vw_1$ equal to t
 \\
 The second principal component $\vw_2$ should also maximize variance, be of unit length, and be orthogonal to $w_1$. We could find that $\vw_2$ should be the eigenvector of $S$ with the second largest eigenvalue. Similarly, we can show that the other dimensions are given by the eigenvectors with decreasing eigenvalues.\\
 \\
-Since there are too many features in the task, we use PCA as preprocessing, which reduces 3072 features to 100 features. We projected all the features on the first 100 eigenvectors thus acquiring the data for classification.
+Since there are too many features in the task, we use PCA as preprocessing, which reduces 3072 features to 100 features. We projected all the features on the first 100 eigenvectors thus acquiring the data for classification. Also, to facilitate the computation of eigenvectors, we use SVD \begin{equation}
+X=U\Sigma V
+\end{equation}
+where $X$ is data matrix. Then the eigenvectors of covariance matrix of $X$ will be the columns of the matrix $V$.
 \subsection{Processing}
 We use parallel SVM with Gaussian kernel for classification, which runs on four seperate machines. The standard SVMs are binary classifiers using a linear decision boundary with disciminant function \begin{equation}
 g(\vx)=\vw^T\vx^t+w_0
@@ -118,16 +122,44 @@ g(\vx)=\vw^T\phi(\vx)=[\sum_{i=1}^k \lambda_i y_i \phi(\vx_i)^T]\phi(\vx)=\sum_{
 Use this kernel function, we do not need to map it to the new space at all. There are multiple types fo kernels and we use Guassian kernel  \begin{equation}
 K(x,x')=exp(-\frac{1}{2}(x-x')^T\Sigma^{-1}(x-x'))
 \end{equation}
+Besides kernel, we make another extension from binary class to $K-$classes by applying 1-of-K encoding scheme, in which y is a vector of length $K$ containing a single 1 for the correct class and 0 elsewhere. For example, if we have $K=5$ classes, then an input that belongs to class $2$ would be given a target vector: \begin{equation}
+y=(0,1,0,0,0)^T
+\end{equation}
 
+\subsection{K-means}
+
+Comparing with SVM, K-means is another clustering algorithm.In  we don't know the exact number of labels. 
+
+\subsection{Percolation Clustering Algorithm}
+
+Besides SVM and k-means, we also realize another clustering algorithm which can be used in the case that we don't know the number of labels(SVM), and we don't have the expectation of number of labels(k-means). This algorithm derived from the percolation algorithm of Newman \cite{}.  The original algorithm is realized on lattice plane. We modified it to let it suitable for our continuable space. 
+In our derived algorithm, each data point i has other data points which are within the circle of radius  $R$ centred at data point i as its neighbors.
+Radius $R$ is our parameter. After each data determining their neighbors, a directed graph will be formed. We w 
 
 \section{Framework and Implementaion}
-\subsection{Framework-Sparks}
+\subsection{Framework-Apache Spark}
+Apache Spark is a fast and general engine for large-scale data processing, which is could work in standalone cluster mode, on EC2, or run it on Hadoop YARN or Apache Mesos. Also, it can read from HDFS, HBase, Cassandra, and any Hadoop data source.\\
+\\
+Spark introduces an abstraction called resilient distributed datasets (RDDs). Spark can outperform Hadoop multiple times, which is the reason we choose it as the framework of our task. It supports both python and Java. We use python for the task. 
+
+
+
+
+
 \subsection{Implementations}
 
 
 \section{Result and evaluation}
 
 
-\section{Conclution}
+\section{Conclusion}
 Image recognition requires high workload because of its intrinsic complex feature space. When it comes to large amount of pictures, common machine learning algorithm shows obvious limitation in pattern recognition in terms of computation efficiency, resource occupation, etc. Thus techniques developed specifically to deal with large-scale data processing could be expected to have obviously superior performance. In this project we implement parallel SVM based on PCA in large-scale image pattern recognition and verify this scheme works in such kind of task with favourable performance as we have expected. 
+
+\begin{thebibliography}{}
+
+\bibitem{Simpson} H. Simpson, \emph{Proof of the Riemann
+Hypothesis},  preprint (2003), available at 
+\url{http://www.math.drofnats.edu/riemann.ps}.
+
+\end{thebibliography}
 \end{document}

@@ -152,8 +152,9 @@ def train(matrix, featureSize, labels):
 	    # with open('svm.model', 'wb') as file:
 	    #     pickle.dump(Z, file)
 
-	# print Z.predict(transformed)
+	Z = Z.predict(transformed)
 
+	print Z[0]
 	correct = 0.0
 	for x in range(len(Z)):
 		if labels[x] == Z[x]:
@@ -162,7 +163,7 @@ def train(matrix, featureSize, labels):
 	print correct/len(Z)
 
 	print 'plot reconstructed data'
-	recData = transformed.dot(matrix_w.T) + matrix.mean(axis=1)[:, None]
+	recData = transformed.dot(v.T) + matrix.mean(axis=1)[:, None]
 	plot(recData[0].reshape((32,32)))
 			
 #Main entry
