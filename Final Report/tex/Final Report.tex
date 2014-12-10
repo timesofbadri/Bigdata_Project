@@ -143,16 +143,20 @@ Radius $R$ is our parameter. After each data determining their neighbors, a dire
 \subsection{Parallelization of PCA}
 
 On the python framework of spark, we can esaily use the map() function to implement the parallel computations of normalizing data, and covariance matrix. The key of implementation of PCA is how to parallel compute the SVD of the covariance matrix, since the svd function in numpy package cannot be used in rdd object. In order to solve the parallelization of SVD decomposition, we tried to implment it by one-side Jacobi SVD algorithm, and another SVD algorithm from freeman lab,thunder python package.\\
-
-One-sided Jacobi Algorithm can be used for singular value decomposition. We implement it by python, it works well on matrix of array type. However, when our one-sided Jacobi Algorithm was run on rdd, it cannot load the dimension of seperate rdd correctly. The code of one-sided Jacobi is on our github. \\
-
-Another way is to use the svd algorithm on spark based on thunder python package from freeman lab. The freeman's svd algorithm cannot work directly. We made some adjustments of their source codes, the modified codes can work well on spark.  
+One-sided Jacobi Algorithm can be used for singular value decomposition\cite{Jacobi}. We implement it by python, it works well on matrix of array type. However, when our one-sided Jacobi Algorithm was run on rdd, it cannot load the dimension of seperate rdd correctly. The code of one-sided Jacobi is on our github. \\
+Another way is to use the svd algorithm on spark based on thunder python package from freeman lab. The freeman's svd algorithm cannot work directly. We made some adjustments of their source codes, the modified codes can work well on spark. 
 
 \subsection{Parallelization of SVM}
 
+The mechanism of parallelization of SVM is illustrated in the paper of \cite{}. But due to the limited time, we didn't successfully realize it.
+
 \subsection{Parallelization of K-means Clustering}
 
+In the MLlib of Apache Spark, they have provided the k-means algorithm in python. We can directly use it on RDD. The mechanism of parallelization is the whole dataset will be divided into several RDD parts. K-means method will be run on these different RDDs. Then, the results will be sum up to form the final conclusion.
+
 \subsection{Parallelization of Percolation Clustering}
+
+The parallelization of percolation clustering is very similar to Co-Clustering algorithm, and k-means, we can implement Percolation clustering on different RDDS seperately, and sum up the results to form the final clusters. 
 
 \section{Framework and Implementaion}
 
@@ -227,6 +231,12 @@ Image recognition requires high workload because of its intrinsic complex featur
 
 \bibitem{spylean} Freeman-Lab, \emph{PySpark/Scikit-learn glue}, \textbf{2014}.\\
 \url{https://github.com/ogrisel/spylearn}.
+
+\bibitem{Percolation} M. E. J. Newman and R. M. Ziff, \emph{Fast Monte Carlo algorithm for site or bond percolation
+}, \textbf{2001}.
+
+\bibitem{Jacobi} B. B. Zhou and R. P. Brent, \emph{On Parallel Implementation of the One-sided Jacobi Algorithm for Singular Value Decompositions
+}, \textbf{1995}.
 
 \end{thebibliography}
 
