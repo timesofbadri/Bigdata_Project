@@ -1,5 +1,13 @@
 ## Scalable Machine Learning
 
+###Prerequisite 
+- numpy
+- Pandas
+- spyLearn
+- Scikit-Learn- PIL
+- matplotlib
+- pyspark
+
 ###How to run
 - Set up your own spark path
 	- Export SPARK_HOME
