@@ -57,10 +57,10 @@ Image recognition requires high workload because of its intrinsic complex featur
 \section{Background and Motivation}
 Pattern recognition concerning image has the mark of complex feature space. Consider a $32\times 32$ color picture, each picture will have 3072 features taking RGB scheme into account. For a dataset of 60,000 pictures, it is quite a huge workload for the classification task.\\
 \\
-However the ability to deal with classification in image recognition is of quite significance. For instance, when we  look for images by inputting keyword "car" through a search engine, clearly it should distinguish between distinct types of objects and we don't expect a picture of a boat in the search result.\\
+However the ability to deal with classification in image recognition is of quite significance. For instance, when we  look for images by inputting keyword ``car'' through a search engine, clearly it should distinguish between distinct types of objects and we don't expect a picture of a boat in the search result.\\
 \\
 We aim to develop an algorithm which makes classification of large-scale image dataset in an efficient manner, that is to say, gives out result quickly with a high level of accuracy. 
-\section{Approach}
+\section{Algorithm}
 \subsection{Preprocessing}
 We use PCA for preprocessing. In PCA, the goal is to project the data $\vx$ with dimensionality $D$ onto a space having dimensionality $M <D$ while  maximizing the variance of the projected data.\\
 \\
@@ -126,40 +126,108 @@ Besides kernel, we make another extension from binary class to $K-$classes by ap
 y=(0,1,0,0,0)^T
 \end{equation}
 
-\subsection{K-means}
+\subsection{K-means Clustering Algorithm}
 
-Comparing with SVM, K-means is another clustering algorithm.In  we don't know the exact number of labels. 
+Comparing with SVM, K-means is another clustering algorithm.In  we don't know the exact number of labels.  K-means clustering aims to partition n observations into k clusters in which each observation belongs to the cluster with the nearest mean, serving as a prototype of the cluster.
+The MLlib on spark has an implementation of K-means in python. Therefore, we can directly use it by importing this package. 
+
 
 \subsection{Percolation Clustering Algorithm}
 
-Besides SVM and k-means, we also realize another clustering algorithm which can be used in the case that we don't know the number of labels(SVM), and we don't have the expectation of number of labels(k-means). This algorithm derived from the percolation algorithm of Newman \cite{}.  The original algorithm is realized on lattice plane. We modified it to let it suitable for our continuable space. 
-In our derived algorithm, each data point i has other data points which are within the circle of radius  $R$ centred at data point i as its neighbors.
-Radius $R$ is our parameter. After each data determining their neighbors, a directed graph will be formed. We w 
+Besides SVM and k-means, we also realize another clustering algorithm which can be used in the case that we don't know the number of labels(SVM), and we don't have the expectation of number of labels(k-means). This algorithm derived from the percolation algorithm of Newman \cite{}.  The original algorithm is realized on lattice plane. We modified it to let it suitable for our continuable space. \\
+In our derived algorithm, each data point i has other data points which are within the circle of radius  $R$ centred at data point i as its neighbors.\\
+Radius $R$ is our parameter. After each data determining their neighbors, a directed graph will be formed. Then the derived percolation clustering algorithm will be realized on such directed graph to get the clusters. 
+
+\section{Parallelization of Algorithm}
+
+\subsection{Parallelization of PCA}
+
+On the python framework of spark, we can esaily use the map() function to implement the parallel computations of normalizing data, and covariance matrix. The key of implementation of PCA is how to parallel compute the SVD of the covariance matrix, since the svd function in numpy package cannot be used in rdd object. In order to solve the parallelization of SVD decomposition, we tried to implment it by one-side Jacobi SVD algorithm, and another SVD algorithm from freeman lab,thunder python package.\\
+
+One-sided Jacobi Algorithm can be used for singular value decomposition. We implement it by python, it works well on matrix of array type. However, when our one-sided Jacobi Algorithm was run on rdd, it cannot load the dimension of seperate rdd correctly. The code of one-sided Jacobi is on our github. \\
+
+Another way is to use the svd algorithm on spark based on thunder python package from freeman lab. The freeman's svd algorithm cannot work directly. We made some adjustments of their source codes, the modified codes can work well on spark.  
+
+\subsection{Parallelization of SVM}
+
+\subsection{Parallelization of K-means Clustering}
+
+\subsection{Parallelization of Percolation Clustering}
 
 \section{Framework and Implementaion}
+
+\subsection{Dataset}
+The CIFAR-10 dataset consists of 60000 32x32 colour images in 10 classes, with 6000 images per class. There are 50000 training images and 10000 test images.
+
+\begin{itemize}
+\item Feature Size\\
+Obviously, here we have a RGB picture with $32 \times 32 *3 = 3072$ features for each sample.
+\item Labels\\
+10 lables stands from different object classes.\\
+This is general supervised classification with multi classes. Here, we employ SVM with Gaussian Kernel to deal with this task.
+\end{itemize}
+
+\begin{figure}[!htb]
+\centering
+\includegraphics[width=1.0\textwidth]{cifar}
+\caption{\label{fig:cifar}CIFAR 10 Dataset and its labels.}
+\end{figure}
+
 \subsection{Framework-Apache Spark}
 Apache Spark is a fast and general engine for large-scale data processing, which is could work in standalone cluster mode, on EC2, or run it on Hadoop YARN or Apache Mesos. Also, it can read from HDFS, HBase, Cassandra, and any Hadoop data source.\\
-\\
 Spark introduces an abstraction called resilient distributed datasets (RDDs). Spark can outperform Hadoop multiple times, which is the reason we choose it as the framework of our task. It supports both python and Java. We use python for the task. 
 
 
-
-
-
 \subsection{Implementations}
-
+\begin{enumerate}
+\item Preprocessing\\
+We first compress the image from original $3072(32 \times 32 \times 3)$ to $1024 (32 \times 32)$, as we convert the picture from RGB to intensity picture, so that each pixel will just retain 1 feature($intensity$) as its feature.
+\item Apply PCA(On spark)
+\begin{itemize}
+\item Substract the original intensity feature matrix by its mean to centralize the data.
+\item Parse the matrix to Spark RDD.
+\item Compute its unitary matrix $U$, singular values $S$ and right eigenvectors $V$.\\
+Here we use $V$ as our basis matrix to transform data.
+\end{itemize}
+\item Apply RBF Kernel SVM
+\begin{itemize}
+\item Transform data from $10000 \times 1024$ dimensions to $10000 \times D$, where $D$ is the hyper parameter indicating the feature size.\\
+We will tune this later to achieve a better balance on accuracy and efficiency. 
+\item Use \textit{One vs All} classifier, and \textit{Gaussian Kernel (RBF)} to reduced dataset.
+\item Use classifier to predict new data on test data set.
+\end{itemize}
+\end{enumerate}
 
 \section{Result and evaluation}
-
+\begin{enumerate}
+\item PCA reduced dimensionality picutre.\\
+\begin{figure}[!htb]
+\centering
+\includegraphics[width=0.7\textwidth]{pca}
+\caption{\label{fig:pca}Reduced picture with 100 features and 200 features.}
+\end{figure}
+This shows reconstruction loss and its correlation on feature numbers.
+\item Accuracy
+\end{enumerate}
 
 \section{Conclusion}
 Image recognition requires high workload because of its intrinsic complex feature space. When it comes to large amount of pictures, common machine learning algorithm shows obvious limitation in pattern recognition in terms of computation efficiency, resource occupation, etc. Thus techniques developed specifically to deal with large-scale data processing could be expected to have obviously superior performance. In this project we implement parallel SVM based on PCA in large-scale image pattern recognition and verify this scheme works in such kind of task with favourable performance as we have expected. 
 
+
 \begin{thebibliography}{}
 
-\bibitem{Simpson} H. Simpson, \emph{Proof of the Riemann
-Hypothesis},  preprint (2003), available at 
-\url{http://www.math.drofnats.edu/riemann.ps}.
+\bibitem{Spark} Spark API, \emph{Spark Programming Guide}, \textbf{2014}.\\
+\url{http://spark.apache.org/docs/latest/programming-guide.html}.
+
+\bibitem{CIFAR} Alex Krizhevsky, \emph{Learning Multiple Layers of Features from Tiny Images}, \textbf{2009}, Master's Thesis.\\
+\url{http://www.cs.toronto.edu/~kriz/cifar.html}.
+
+\bibitem{SCIKIT} scikit-learn, \emph{Multiclass Support Vector Machine}, \textbf{2014}.\\
+\url{http://scikit-learn.org/stable/modules/svm.html}.
+
+\bibitem{spylean} Freeman-Lab, \emph{PySpark/Scikit-learn glue}, \textbf{2014}.\\
+\url{https://github.com/ogrisel/spylearn}.
 
 \end{thebibliography}
+
 \end{document}
