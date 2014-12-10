@@ -18,4 +18,4 @@
 
 ###Sample result plot
 
-![PCA result](https://raw.githubusercontent.com/Nero-Hu/Bigdata_Project/master/Final%20Report/tex/pca.png =500x500)
+![PCA result](https://raw.githubusercontent.com/Nero-Hu/Bigdata_Project/master/Final%20Report/tex/pca.png)
