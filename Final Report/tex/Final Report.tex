@@ -212,6 +212,12 @@ We will tune this later to achieve a better balance on accuracy and efficiency.
 \end{figure}
 This shows reconstruction loss and its correlation on feature numbers.
 \item Accuracy
+Below is the training results from the parallelized PCA. In this graph, PC is the number of Principal Components and Gamma is the parameter of RBF kernel, which is $\frac{1}{\sigma^2}$.
+\begin{figure}[!htb]
+\centering
+\includegraphics[width=1.0\textwidth]{accuracy.png}
+\caption{\label{fig:pca}Accuracy result}
+\end{figure}
 \end{enumerate}
 
 \section{Conclusion}
@@ -219,6 +225,15 @@ Image recognition requires high workload because of its intrinsic complex featur
 
 
 \begin{thebibliography}{}
+
+\bibitem{Percolation} M. E. J. Newman and R. M. Ziff, \emph{Fast Monte Carlo algorithm for site or bond percolation
+}, \textbf{2001}.
+
+\bibitem{Jacobi} B. B. Zhou and R. P. Brent, \emph{On Parallel Implementation of the One-sided Jacobi Algorithm for Singular Value Decompositions
+}, \textbf{1995}.
+
+\bibitem{SVM} Hans Peter Graf, Eric Cosatto, \emph{Parallel Support Vector Machines: The Cascade SVM
+}, \textbf{}.
 
 \bibitem{Spark} Spark API, \emph{Spark Programming Guide}, \textbf{2014}.\\
 \url{http://spark.apache.org/docs/latest/programming-guide.html}.
@@ -231,15 +246,6 @@ Image recognition requires high workload because of its intrinsic complex featur
 
 \bibitem{spylean} Freeman-Lab, \emph{PySpark/Scikit-learn glue}, \textbf{2014}.\\
 \url{https://github.com/ogrisel/spylearn}.
-
-\bibitem{Percolation} M. E. J. Newman and R. M. Ziff, \emph{Fast Monte Carlo algorithm for site or bond percolation
-}, \textbf{2001}.
-
-\bibitem{Jacobi} B. B. Zhou and R. P. Brent, \emph{On Parallel Implementation of the One-sided Jacobi Algorithm for Singular Value Decompositions
-}, \textbf{1995}.
-
-\bibitem{SVM} Hans Peter Graf, Eric Cosatto, \emph{Parallel Support Vector Machines: The Cascade SVM
-}, \textbf{}.
 \end{thebibliography}
 
 \end{document}
